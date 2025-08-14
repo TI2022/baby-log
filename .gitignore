@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/frontend/node_modules
+/backend/vendor/bundle
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,13 +14,17 @@
 
 # testing
 /coverage
+/frontend/coverage
 
 # next.js
 /.next/
-/out/
+/frontend/.next/
+/frontend/out/
 
 # production
 /build
+/frontend/build
+/backend/public/assets
 
 # misc
 .DS_Store
@@ -32,6 +38,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+/frontend/.env*
+/backend/.env*
 
 # vercel
 .vercel

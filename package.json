@@ -1,27 +1,42 @@
 {
-  "name": "baby-log",
+  "name": "baby-log-monorepo",
   "version": "0.1.0",
   "private": true,
+  "description": "育児記録アプリケーション - モノレポ構成",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.4.6"
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && rails server -p 3001",
+    "dev:mock": "concurrently \"npm run mock-server\" \"npm run dev:frontend\"",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "npm run start:frontend",
+    "start:frontend": "cd frontend && npm start",
+    "test": "concurrently \"npm run test:frontend\" \"npm run test:backend\"",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && rails test",
+    "lint": "npm run lint:frontend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "mock-server": "cd frontend && npm run mock-server",
+    "mock-server:validate": "cd frontend && npm run mock-server:validate",
+    "storybook": "cd frontend && npm run storybook",
+    "build-storybook": "cd frontend && npm run build-storybook",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && bundle install",
+    "install:all": "concurrently \"npm run install:frontend\" \"npm run install:backend\"",
+    "clean": "concurrently \"npm run clean:frontend\" \"npm run clean:backend\"",
+    "clean:frontend": "cd frontend && rm -rf node_modules .next",
+    "clean:backend": "cd backend && rm -rf tmp/cache/*"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "15.4.6",
-    "@eslint/eslintrc": "^3"
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

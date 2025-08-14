@@ -1,0 +1,693 @@
+openapi: 3.0.0
+info:
+  title: Baby Log API
+  version: 1.0.0
+  description: |
+    育児記録アプリケーションのREST API
+    
+    ## 概要
+    赤ちゃんの日々の記録（ミルク、おむつ、睡眠、予防接種、成長）を管理するためのAPI
+    
+    ## 認証
+    JWT Bearer Token認証を使用
+    
+  contact:
+    name: Baby Log Development Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3001
+    description: Development server
+
+tags:
+  - name: Auth
+    description: 認証関連のエンドポイント
+  - name: Users
+    description: ユーザー情報管理
+  - name: Records
+    description: 育児記録管理
+  - name: Partnerships
+    description: パートナーシップ（夫婦連携）管理
+
+paths:
+  # ヘルスチェック
+  /:
+    get:
+      summary: API ヘルスチェック
+      description: APIサーバーの稼働状況を確認
+      responses:
+        '200':
+          description: API稼働中
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  message:
+                    type: string
+                    example: "Baby Log API is running"
+
+  # 認証エンドポイント
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: ユーザー登録
+      description: 新規ユーザーを登録し、JWTトークンを返す
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: 登録成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: ログイン
+      description: メールアドレスとパスワードでログインし、JWTトークンを返す
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        '200':
+          description: ログイン成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: 認証失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/logout:
+    delete:
+      tags: [Auth]
+      summary: ログアウト
+      description: JWTトークンを無効化
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: ログアウト成功
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: 認証ユーザー情報取得
+      description: 現在認証中のユーザー情報を取得
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: ユーザー情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ユーザー管理エンドポイント
+  /api/users/profile:
+    get:
+      tags: [Users]
+      summary: プロフィール取得
+      description: 認証ユーザーのプロフィール情報を取得
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: プロフィール取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Users]
+      summary: プロフィール更新
+      description: 認証ユーザーのプロフィール情報を更新
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: プロフィール更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # 育児記録エンドポイント
+  /api/records:
+    get:
+      tags: [Records]
+      summary: 育児記録一覧取得
+      description: 認証ユーザーの育児記録とパートナーの記録を取得
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: ページ番号
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: 1ページあたりの件数
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: type
+          in: query
+          description: 記録タイプでフィルタ
+          schema:
+            $ref: '#/components/schemas/RecordType'
+        - name: date_from
+          in: query
+          description: 開始日（YYYY-MM-DD）
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          description: 終了日（YYYY-MM-DD）
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 記録一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordListResponse'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Records]
+      summary: 育児記録作成
+      description: 新しい育児記録を作成
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordCreateRequest'
+      responses:
+        '201':
+          description: 記録作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Record'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/records/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: 記録ID
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      tags: [Records]
+      summary: 育児記録詳細取得
+      description: 指定したIDの育児記録を取得
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 記録取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Record'
+        '404':
+          description: 記録が見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Records]
+      summary: 育児記録更新
+      description: 指定したIDの育児記録を更新（自分の記録のみ更新可能）
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordUpdateRequest'
+      responses:
+        '200':
+          description: 記録更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Record'
+        '403':
+          description: 他人の記録は更新できない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 記録が見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Records]
+      summary: 育児記録削除
+      description: 指定したIDの育児記録を削除（自分の記録のみ削除可能）
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: 記録削除成功
+        '403':
+          description: 他人の記録は削除できない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 記録が見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # パートナーシップエンドポイント
+  /api/partnerships:
+    get:
+      tags: [Partnerships]
+      summary: パートナーシップ一覧取得
+      description: 自分に関連するパートナーシップリクエストを取得
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: パートナーシップ一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Partnership'
+
+    post:
+      tags: [Partnerships]
+      summary: パートナーシップリクエスト送信
+      description: 他のユーザーにパートナーシップリクエストを送信
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnershipCreateRequest'
+      responses:
+        '201':
+          description: リクエスト送信成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partnership'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/partnerships/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: パートナーシップID
+        schema:
+          type: string
+          format: uuid
+
+    put:
+      tags: [Partnerships]
+      summary: パートナーシップ応答
+      description: 受信したパートナーシップリクエストに応答（承認/拒否）
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnershipUpdateRequest'
+      responses:
+        '200':
+          description: 応答成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partnership'
+        '403':
+          description: 他人のリクエストには応答できない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: パートナーシップが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# スキーマ定義
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # 基本エラーレスポンス
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+          example: ["Email has already been taken"]
+
+    # 認証関連
+    UserRegistrationRequest:
+      type: object
+      required:
+        - email
+        - password
+        - password_confirmation
+        - display_name
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 6
+          example: "password123"
+        password_confirmation:
+          type: string
+          minLength: 6
+          example: "password123"
+        display_name:
+          type: string
+          minLength: 1
+          example: "山田太郎"
+
+    UserLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          example: "password123"
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: JWT access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    # ユーザー関連
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        display_name:
+          type: string
+          example: "山田太郎"
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.com/avatar.jpg"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          example: "山田次郎"
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.com/new_avatar.jpg"
+
+    # 育児記録関連
+    RecordType:
+      type: string
+      enum: [milk, diaper, sleep, vaccination, growth]
+
+    Record:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        user_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        type:
+          $ref: '#/components/schemas/RecordType'
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        metadata:
+          type: object
+          description: 記録タイプに応じたメタデータ
+          example:
+            amount: 120
+            unit: "ml"
+            notes: "順調に飲みました"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    RecordCreateRequest:
+      type: object
+      required:
+        - type
+        - timestamp
+      properties:
+        type:
+          $ref: '#/components/schemas/RecordType'
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        metadata:
+          type: object
+          description: 記録タイプに応じたメタデータ
+          example:
+            amount: 120
+            unit: "ml"
+            notes: "順調に飲みました"
+
+    RecordUpdateRequest:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        metadata:
+          type: object
+          description: 記録タイプに応じたメタデータ
+          example:
+            amount: 150
+            unit: "ml"
+            notes: "よく飲みました"
+
+    RecordListResponse:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/Record'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginationInfo:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 20
+        total_pages:
+          type: integer
+          example: 5
+        total_count:
+          type: integer
+          example: 98
+
+    # パートナーシップ関連
+    PartnershipStatus:
+      type: string
+      enum: [pending, accepted, declined]
+
+    Partnership:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        user1:
+          $ref: '#/components/schemas/User'
+        user2:
+          $ref: '#/components/schemas/User'
+        status:
+          $ref: '#/components/schemas/PartnershipStatus'
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    PartnershipCreateRequest:
+      type: object
+      required:
+        - partner_email
+      properties:
+        partner_email:
+          type: string
+          format: email
+          example: "partner@example.com"
+
+    PartnershipUpdateRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [accepted, declined]
+          example: "accepted"
