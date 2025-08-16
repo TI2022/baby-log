@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 ドキュメント
+    url: https://github.com/TI2022/baby-log/blob/main/README.md
+    about: プロジェクトのドキュメントを確認してください
+  - name: 💬 ディスカッション
+    url: https://github.com/TI2022/baby-log/discussions
+    about: アイデアや質問はディスカッションで話し合いましょう
