@@ -260,18 +260,202 @@ export const EditUserButton = ({ userId }) => {
 3. **軽量性**: Redux系の重いライブラリは避け、Zustand/Jotaiなどの軽量ライブラリを選択
 4. **段階的導入**: 必要最小限の範囲から開始
 
-## 5. スタイリング戦略（CSS-in-JS完全統一）
+## 5. スタイリング戦略（サーバーコンポーネント対応）
 
-**基本方針**: CSS-in-JSを使用し、TailwindCSSは一切使用しない
+**基本方針**: サーバーコンポーネントとクライアントコンポーネントで適切なスタイリング手法を使い分ける
 
-### CSS-in-JS完全統一ルール
+### 🎨 スタイリング手法の使い分けルール
 
-1. **styled-components**: 唯一のスタイリングライブラリとして使用
-2. **TailwindCSS完全廃止**: classNameでのユーティリティクラス使用禁止
-3. **動的スタイル**: propsベースの条件分岐スタイルを積極活用
-4. **テーマ管理**: `/src/styles/theme.ts`を使用したグローバルテーマ管理
-5. **TypeScript対応**: styled-componentsの型安全性を活用
-6. **transient props**: DOMに渡されないpropsは`$`プレフィックス必須
+#### 5.1 サーバーコンポーネント: **Tailwind CSS**
+- **理由**: CSS-in-JSはサーバーコンポーネントで使用不可
+- **対象**: `'use client'`ディレクティブがないコンポーネント
+- **原則**: ユーティリティクラスを使用した効率的なスタイリング
+
+```tsx
+// ✅ サーバーコンポーネントでの正しいスタイリング
+export function RecordCard({ record }: { record: Record }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {record.type === 'milk' ? '🍼' : '👶'} {record.title}
+        </h3>
+        <span className="text-sm text-gray-500">
+          {formatTime(record.recorded_at)}
+        </span>
+      </div>
+      <p className="text-gray-600">{record.metadata.note}</p>
+    </div>
+  );
+}
+```
+
+#### 5.2 クライアントコンポーネント: **Styled Components**
+- **理由**: インタラクティブな状態管理が必要な場合
+- **対象**: `'use client'`ディレクティブがあるコンポーネント
+- **原則**: 動的スタイルと状態連動が可能
+
+```tsx
+// ✅ クライアントコンポーネントでの正しいスタイリング
+'use client';
+import styled from 'styled-components';
+
+const StyledButton = styled.button<{ 
+  $variant: 'primary' | 'secondary'; 
+  $isLoading?: boolean;
+}>`
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
+  
+  background-color: ${({ $variant, theme }) => 
+    $variant === 'primary' ? theme.colors.primary[500] : theme.colors.gray[200]
+  };
+  
+  opacity: ${({ $isLoading }) => $isLoading ? 0.6 : 1};
+  cursor: ${({ $isLoading }) => $isLoading ? 'not-allowed' : 'pointer'};
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+export function InteractiveButton({ children, onClick, isLoading }: Props) {
+  return (
+    <StyledButton 
+      $variant="primary" 
+      $isLoading={isLoading}
+      onClick={onClick}
+      disabled={isLoading}
+    >
+      {children}
+    </StyledButton>
+  );
+}
+```
+
+### 5.3 スタイリング手法選択フローチャート
+
+```mermaid
+flowchart TD
+    Start([コンポーネント作成]) --> Check{サーバーコンポーネント?}
+    Check -->|Yes| Tailwind[Tailwind CSS使用]
+    Check -->|No| Interactive{インタラクティブ?}
+    Interactive -->|Yes| Styled[Styled Components使用]
+    Interactive -->|No| Simple[シンプルなスタイル?]
+    Simple -->|Yes| TailwindClient[Tailwind CSS使用]
+    Simple -->|No| Styled
+    
+    Tailwind --> TailwindRules[・ユーティリティクラス<br/>・レスポンシブ対応<br/>・コンポーネント再利用]
+    Styled --> StyledRules[・動的スタイル<br/>・状態連動<br/>・transient props]
+    TailwindClient --> TailwindRules
+    
+    style Tailwind fill:#38bdf8,color:#fff
+    style Styled fill:#f97316,color:#fff
+    style TailwindClient fill:#38bdf8,color:#fff
+```
+
+### 5.4 Tailwind CSS 実装ルール
+
+#### 基本設定
+```typescript
+// tailwind.config.ts
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/features/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#eff6ff',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+        },
+        secondary: {
+          50: '#fff7ed',
+          500: '#f97316',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+}
+```
+
+#### クラス命名規則
+```tsx
+// ✅ 良い例: 意図が明確
+<div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+    記録一覧
+  </h2>
+</div>
+
+// ❌ 悪い例: 長すぎる・読みにくい
+<div className="bg-white border-gray-200 border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200 ease-in-out">
+```
+
+#### レスポンシブデザイン
+```tsx
+// モバイルファーストアプローチ
+<div className="
+  p-4           
+  md:p-6        
+  lg:p-8        
+  grid 
+  grid-cols-1   
+  md:grid-cols-2 
+  lg:grid-cols-3 
+  gap-4
+">
+```
+
+### 5.5 Styled Components 実装ルール（クライアントのみ）
+
+#### 基本原則
+1. **transient props**: DOMに渡されないpropsは`$`プレフィックス必須
+2. **テーマ活用**: `theme`オブジェクトを積極的に使用
+3. **TypeScript対応**: 型安全なpropsを定義
+
+```tsx
+'use client';
+import styled from 'styled-components';
+
+// ✅ 正しい実装
+const StyledCard = styled.div<{ 
+  $elevated?: boolean;
+  $interactive?: boolean; 
+}>`
+  padding: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  background-color: ${({ theme }) => theme.colors.white};
+  
+  ${({ $elevated, theme }) => $elevated && `
+    box-shadow: ${theme.shadows.lg};
+  `}
+  
+  ${({ $interactive }) => $interactive && `
+    cursor: pointer;
+    transition: transform 0.2s;
+    
+    &:hover {
+      transform: translateY(-2px);
+    }
+  `}
+`;
+```
 
 ### 実装例
 
