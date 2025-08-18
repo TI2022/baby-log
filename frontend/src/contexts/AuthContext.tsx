@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
-// axiosの依存関係問題を避けるためfetch-clientを使用
-import { fetchAuthApi as authApi, setToken, removeToken, getToken, User } from '@/lib/fetch-client';
+import { authApi, setToken, removeToken, getToken } from '@/lib/api';
+import type { User, LoginCredentials, RegisterData } from '@/types';
 
 // 認証状態の型定義
 interface AuthState {
@@ -72,10 +72,11 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 
 // Context作成
 interface AuthContextType extends AuthState {
-  login: (credentials: { email: string; password: string }) => Promise<void>;
-  register: (userData: { email: string; password: string; password_confirmation: string; display_name: string }) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
+  checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,26 +91,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // アプリ起動時に localStorage から認証情報を復元
   useEffect(() => {
+    initializeAuth();
+  }, []);
+
+  const initializeAuth = async () => {
     const token = getToken();
     
     if (token) {
       // トークンがある場合はユーザー情報を取得
-      authApi.me()
-        .then(response => {
-          dispatch({ type: 'INITIALIZE', payload: { user: response, token } });
-        })
-        .catch(() => {
-          // トークンが無効な場合は削除
-          removeToken();
-          dispatch({ type: 'INITIALIZE', payload: { user: null, token: null } });
-        });
+      try {
+        const response = await authApi.me();
+        dispatch({ type: 'INITIALIZE', payload: { user: response.data, token } });
+      } catch (error) {
+        console.warn('認証トークンが無効です:', error);
+        // トークンが無効な場合は削除
+        removeToken();
+        dispatch({ type: 'INITIALIZE', payload: { user: null, token: null } });
+      }
     } else {
-      // 開発環境では、認証情報がない場合はダミーユーザーでログイン
-      if (process.env.NODE_ENV === 'development') {
+      // モック環境では、認証情報がない場合はダミーユーザーでログイン
+      if (process.env.NEXT_PUBLIC_USE_MOCK === 'true') {
         const dummyUser: User = {
           id: 'demo-user-1',
           email: 'demo@example.com',
           display_name: 'デモユーザー',
+          baby_name: 'さくらちゃん',
+          baby_birthday: '2024-07-01',
+          timezone: 'Asia/Tokyo',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -121,26 +129,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
         dispatch({ type: 'INITIALIZE', payload: { user: null, token: null } });
       }
     }
-  }, []);
+  };
 
-  const login = async (credentials: { email: string; password: string }) => {
+  const login = async (credentials: LoginCredentials) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await authApi.login(credentials.email, credentials.password);
-      setToken(response.token);
-      dispatch({ type: 'LOGIN', payload: { user: response.user, token: response.token } });
+      const response = await authApi.login(credentials);
+      const { user, token } = response.data;
+      setToken(token);
+      dispatch({ type: 'LOGIN', payload: { user, token } });
     } catch (error) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
     }
   };
 
-  const register = async (userData: { email: string; password: string; password_confirmation: string; display_name: string }) => {
+  const register = async (userData: RegisterData) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await authApi.register(userData.email, userData.password, userData.display_name);
-      setToken(response.token);
-      dispatch({ type: 'LOGIN', payload: { user: response.user, token: response.token } });
+      const response = await authApi.register(userData);
+      const { user, token } = response.data;
+      setToken(token);
+      dispatch({ type: 'LOGIN', payload: { user, token } });
     } catch (error) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
@@ -151,8 +161,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await authApi.logout();
     } catch (error) {
-      // ログアウト API の失敗は無視
+      // ログアウト API の失敗は無視（モック環境など）
+      console.warn('ログアウトAPI呼び出しに失敗しましたが、ローカル認証情報を削除します:', error);
     } finally {
+      removeToken();
+      dispatch({ type: 'LOGOUT' });
+    }
+  };
+
+  const checkAuth = async () => {
+    const token = getToken();
+    if (!token) {
+      dispatch({ type: 'LOGOUT' });
+      return;
+    }
+
+    try {
+      const response = await authApi.me();
+      dispatch({ type: 'UPDATE_USER', payload: response.data });
+    } catch (error) {
+      console.warn('認証チェックに失敗しました:', error);
       removeToken();
       dispatch({ type: 'LOGOUT' });
     }
@@ -168,6 +196,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     register,
     logout,
     updateUser,
+    checkAuth,
   };
 
   return (
