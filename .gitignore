@@ -47,3 +47,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# API generated files (commit them but ignore local modifications during development)
+# /frontend/src/api/generated/
+# /frontend/src/types/api.ts
+
+# Uncomment above lines if you want to ignore generated files
+# For now, we'll commit them to ensure team synchronization
