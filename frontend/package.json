@@ -4,13 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "npm run check-rules && next build",
+    "build": "npm run check-rules && npm run api:all && next build",
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "mock-server": "prism mock ../api/openapi.yaml --host 0.0.0.0 --port 3001",
     "mock-server:validate": "prism mock ../api/openapi.yaml --host 0.0.0.0 --port 3001 --validate-request --validate-response",
+    "api:generate": "openapi-generator-cli generate -i ../api/openapi.yaml -g typescript-axios -o src/api/generated --additional-properties=useSingleRequestParameter=true,withoutPrefixEnums=true,enumPropertyNaming=original",
+    "api:generate-types": "openapi-typescript ../api/openapi.yaml --output src/types/api.ts",
+    "api:validate": "openapi-generator-cli validate -i ../api/openapi.yaml",
+    "api:clean": "rm -rf src/api/generated",
+    "api:all": "npm run api:clean && npm run api:generate && npm run api:generate-types",
     "check-rules": "echo '🚨 開発ルール確認が必要です。以下を実行してください:' && echo 'cat ../docs/DEVELOPMENT_WORKFLOW.md | head -50' && echo 'cat ../docs/NEXTJS_CODING_RULES.md | head -100'",
     "rules": "cat ../docs/DEVELOPMENT_WORKFLOW.md && echo '\\n=== NEXTJS CODING RULES ===' && cat ../docs/NEXTJS_CODING_RULES.md | head -150"
   },
@@ -26,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@openapitools/openapi-generator-cli": "^2.22.0",
     "@stoplight/prism-cli": "^5.14.2",
     "@storybook/addon-essentials": "^8.4.0",
     "@storybook/addon-interactions": "^8.4.0",
@@ -40,6 +46,7 @@
     "@types/styled-components": "^5.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
+    "openapi-typescript": "^7.9.1",
     "storybook": "^8.4.0",
     "typescript": "^5"
   }
