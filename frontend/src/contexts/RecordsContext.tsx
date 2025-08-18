@@ -2,20 +2,20 @@
 
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 // axiosの依存関係問題を避けるためfetch-clientを使用
-import { Record, fetchRecordApi as recordApi } from '@/lib/fetch-client';
+import { Record as BabyLogRecord, fetchRecordApi as recordApi } from '@/lib/fetch-client';
 
 // 記録状態の型定義
 interface RecordsState {
-  records: Record[];
+  records: BabyLogRecord[];
   isLoading: boolean;
   error: string | null;
 }
 
 // アクションの型定義
 type RecordsAction =
-  | { type: 'SET_RECORDS'; payload: Record[] }
-  | { type: 'ADD_RECORD'; payload: Record }
-  | { type: 'UPDATE_RECORD'; payload: { id: string; updates: Partial<Record> } }
+  | { type: 'SET_RECORDS'; payload: BabyLogRecord[] }
+  | { type: 'ADD_RECORD'; payload: BabyLogRecord }
+  | { type: 'UPDATE_RECORD'; payload: { id: string; updates: Partial<BabyLogRecord> } }
   | { type: 'DELETE_RECORD'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };
@@ -74,20 +74,20 @@ function recordsReducer(state: RecordsState, action: RecordsAction): RecordsStat
 
 // Context作成
 interface RecordsContextType extends RecordsState {
-  fetchRecords: (params?: { page?: number; per_page?: number; type?: Record['type']; date_from?: string; date_to?: string }) => Promise<void>;
-  createRecord: (recordData: { type_name: Record['type']; timestamp: string; metadata?: Record<string, any> }) => Promise<any>;
+  fetchRecords: (params?: { page?: number; per_page?: number; type?: BabyLogRecord['type']; date_from?: string; date_to?: string }) => Promise<void>;
+  createRecord: (recordData: { type_name: BabyLogRecord['type']; timestamp: string; metadata?: Record<string, any> }) => Promise<any>;
   updateRecord: (id: string, updates: { timestamp?: string; metadata?: Record<string, any> }) => Promise<any>;
   deleteRecord: (id: string) => Promise<void>;
-  setRecords: (records: Record[]) => void;
-  addRecord: (record: Record) => void;
+  setRecords: (records: BabyLogRecord[]) => void;
+  addRecord: (record: BabyLogRecord) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   removeLocalRecord: (id: string) => void;
   
   // Getter関数
-  getRecordsByType: (type: Record['type']) => Record[];
-  getRecordsForDate: (date: string) => Record[];
-  getLatestRecords: (limit?: number) => Record[];
+  getRecordsByType: (type: BabyLogRecord['type']) => BabyLogRecord[];
+  getRecordsForDate: (date: string) => BabyLogRecord[];
+  getLatestRecords: (limit?: number) => BabyLogRecord[];
 }
 
 const RecordsContext = createContext<RecordsContextType | undefined>(undefined);
@@ -100,7 +100,7 @@ interface RecordsProviderProps {
 export function RecordsProvider({ children }: RecordsProviderProps) {
   const [state, dispatch] = useReducer(recordsReducer, initialState);
 
-  const fetchRecords = async (params?: { page?: number; per_page?: number; type?: Record['type']; date_from?: string; date_to?: string }) => {
+  const fetchRecords = async (params?: { page?: number; per_page?: number; type?: BabyLogRecord['type']; date_from?: string; date_to?: string }) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -114,7 +114,7 @@ export function RecordsProvider({ children }: RecordsProviderProps) {
     }
   };
 
-  const createRecord = async (recordData: { type_name: Record['type']; timestamp: string; metadata?: Record<string, any> }) => {
+  const createRecord = async (recordData: { type_name: BabyLogRecord['type']; timestamp: string; metadata?: Record<string, any> }) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -173,11 +173,11 @@ export function RecordsProvider({ children }: RecordsProviderProps) {
     }
   };
 
-  const setRecords = (records: Record[]) => {
+  const setRecords = (records: BabyLogRecord[]) => {
     dispatch({ type: 'SET_RECORDS', payload: records });
   };
 
-  const addRecord = (record: Record) => {
+  const addRecord = (record: BabyLogRecord) => {
     dispatch({ type: 'ADD_RECORD', payload: record });
   };
 
@@ -195,7 +195,7 @@ export function RecordsProvider({ children }: RecordsProviderProps) {
   };
 
   // Getter関数
-  const getRecordsByType = (type: Record['type']) => {
+  const getRecordsByType = (type: BabyLogRecord['type']) => {
     return state.records.filter((record) => record.type === type);
   };
 
