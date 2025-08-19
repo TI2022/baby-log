@@ -80,10 +80,7 @@ export function RecordsContainer() {
     fetchRecords: contextFetchRecords,
     createRecord,
     deleteRecord,
-    setRecords,
-    addRecord,
-    setLoading,
-    setError,
+    addLocalRecord,
     removeLocalRecord,
   } = useRecords();
   
@@ -95,8 +92,8 @@ export function RecordsContainer() {
     if (!isAuthenticated) return;
     
     try {
-      setLoading(true);
-      setError(null);
+      // setLoadingとsetErrorメソッドが存在しない
+      console.log('記録を取得中...');
       
       // 現在はダミーデータでレンダリング遅延をシミュレート
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -142,15 +139,16 @@ export function RecordsContainer() {
         },
       ];
       
-      // Contextの状態を直接更新
-      setRecords(dummyRecords);
+      // Contextの状態を直接更新（addLocalRecordを使用）
+      dummyRecords.forEach(record => {
+        addLocalRecord(record);
+      });
     } catch (err) {
       console.error('記録の取得に失敗しました:', err);
-      setError('記録の取得に失敗しました');
-    } finally {
-      setLoading(false);
+      // setErrorメソッドが存在しないため、コンソールエラーのみ
+      console.error('記録の取得に失敗しました');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, addLocalRecord]);
 
   // 記録を取得する（現在はダミーデータを使用）
   useEffect(() => {
@@ -187,7 +185,7 @@ export function RecordsContainer() {
       updated_at: new Date().toISOString(),
     };
     
-    addRecord(optimisticRecord);
+    addLocalRecord(optimisticRecord);
     setShowAddForm(false);
     
     try {
@@ -201,7 +199,7 @@ export function RecordsContainer() {
       
     } catch (err) {
       removeLocalRecord(optimisticRecord.id);
-      setError('記録の追加に失敗しました');
+      console.error('記録の追加に失敗しました');
       console.error('記録の追加に失敗しました:', err);
     }
   };
@@ -222,7 +220,7 @@ export function RecordsContainer() {
       }
       
     } catch (err) {
-      setError('記録の追加に失敗しました');
+      console.error('記録の追加に失敗しました');
       console.error('記録の追加に失敗しました:', err);
     }
   };

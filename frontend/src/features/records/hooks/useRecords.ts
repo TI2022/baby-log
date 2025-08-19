@@ -3,8 +3,7 @@
  * RecordsContextを使いやすくラップしたカスタムフック
  */
 
-import { useContext } from 'react';
-import { RecordsContext } from '@/contexts/RecordsContext';
+import { useRecords as useRecordsContext } from '@/contexts/RecordsContext';
 import type { Record, RecordType, RecordedBy } from '@/types';
 
 /**
@@ -12,13 +11,7 @@ import type { Record, RecordType, RecordedBy } from '@/types';
  * RecordsContextへの便利なインターフェースを提供
  */
 export function useRecords() {
-  const context = useContext(RecordsContext);
-  
-  if (context === undefined) {
-    throw new Error('useRecords must be used within a RecordsProvider');
-  }
-
-  return context;
+  return useRecordsContext();
 }
 
 /**
