@@ -7,7 +7,8 @@ import { RecordsList } from '@/features/records';
 import { useRecords } from '@/contexts/RecordsContext';
 import { useAuth } from '@/contexts/AuthContext';
 // axiosの依存関係問題を避けるためfetch-clientを使用
-import { fetchRecordApi as recordApi, Record } from '@/lib/fetch-client';
+import { fetchRecordApi as recordApi } from '@/lib/fetch-client';
+import type { Record } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { FEATURE_FLAGS, API_MODE } from '@/lib/feature-flags';
 import { theme } from '@/styles/theme';
@@ -103,11 +104,12 @@ export function RecordsContainer() {
           id: '1',
           user_id: 'user1',
           type: 'milk',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2時間前
+          recorded_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2時間前
+          recorded_by: 'mama',
           metadata: {
-            amount: 120,
-            unit: 'ml',
-            notes: '順調に飲みました',
+            amount_ml: 120,
+            milk_type: 'formula',
+            note: '順調に飲みました',
           },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -116,10 +118,11 @@ export function RecordsContainer() {
           id: '2',
           user_id: 'user1',
           type: 'diaper',
-          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4時間前
+          recorded_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4時間前
+          recorded_by: 'papa',
           metadata: {
-            type: 'wet',
-            notes: '',
+            diaper_type: 'pee',
+            condition: 'normal',
           },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -128,11 +131,15 @@ export function RecordsContainer() {
           id: '3',
           user_id: 'user1',
           type: 'sleep',
-          timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6時間前
+          recorded_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6時間前
+          recorded_by: 'mama',
           metadata: {
-            duration: 90, // 90分
+            start_time: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+            end_time: new Date(Date.now() - 4.5 * 60 * 60 * 1000).toISOString(),
+            duration_minutes: 90,
             quality: 'good',
-            notes: 'よく眠れました',
+            location: 'crib',
+            note: 'よく眠れました',
           },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
